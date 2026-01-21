@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>对不起，陈慧娴</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #fef7fb 0%, #fcf1f7 100%);
+            min-height: 100vh;
+            position: relative;
+            overflow: hidden; /* 彻底禁止滚动，固定可视区域 */
+        }
+
+        .apology-box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 50px 30px;
+            border-radius: 20px;
+            box-shadow: 0 8px 25px rgba(230, 126, 157, 0.15);
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+            z-index: 100; /* 确保面板在花瓣上层 */
+        }
+
+        h1 {
+            color: #e53e3e;
+            margin-bottom: 40px;
+            font-size: 24px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            position: relative;
+            min-height: 60px;
+        }
+
+        button {
+            padding: 15px 35px;
+            border: none;
+            border-radius: 50px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 120px;
+            height: 54px;
+            /* 固定按钮盒模型，避免尺寸波动 */
+            display: inline-block;
+        }
+
+        #forgive {
+            background: #48bb78;
+            color: white;
+            position: relative;
+        }
+
+        #forgive:hover {
+            background: #38a169;
+            transform: translateY(-2px);
+        }
+
+        #not-forgive {
+            background: #e53e3e;
+            color: white;
+            position: absolute;
+            top: 0;
+            left: calc(50% + 40px);
+            transition: all 0.1s ease;
+            /* 强制按钮尺寸不随内容变化 */
+            white-space: nowrap;
+        }
+
+        #not-forgive:hover {
+            background: #c53030;
+        }
+
+        /* 花瓣样式 */
+        .petal {
+            position: absolute;
+            background-color: #ffb6c1;
+            border-radius: 50% 0 50% 50%;
+            opacity: 0.8;
+            z-index: 50; /* 花瓣在面板下层 */
+            pointer-events: none; /* 花瓣不阻挡按钮点击 */
+            transform: rotate(45deg);
+            animation: fall linear infinite;
+        }
+
+        /* 花瓣下落动画（延长时长，更自然） */
+        @keyframes fall {
+            0% {
+                top: -10px;
+                opacity: 0.8;
+                transform: rotate(45deg) translateX(0);
+            }
+            100% {
+                top: 100vh;
+                opacity: 0;
+                transform: rotate(225deg) translateX(50px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="apology-box">
+        <h1>陈慧娴，对不起 😔</h1>
+        <div class="btn-group">
+            <button id="forgive">原谅你</button>
+            <button id="not-forgive">不原谅</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const forgiveBtn = document.getElementById('forgive');
+            const notForgiveBtn = document.getElementById('not-forgive');
+            let isForgiven = false;
+            let petalInterval = null; // 花瓣定时器，用于控制无限生成
+
+            // ========== 强化版按钮位置计算（绝对不出界） ==========
+            const getBtnSafePos = () => {
+                // 强制获取按钮的最终渲染尺寸（包含padding/border）
+                const btnRect = notForgiveBtn.getBoundingClientRect();
+                const btnWidth = btnRect.width;
+                const btnHeight = btnRect.height;
+
+                // 屏幕可视区域的真实边界（排除滚动条，仅可视区域）
+                const screenWidth = window.innerWidth;
+                const screenHeight = window.innerHeight;
+
+                // 计算按钮可移动的最大范围：
+                // 左边界：0
+                // 右边界：屏幕宽度 - 按钮宽度
+                // 上边界：0
+                // 下边界：屏幕高度 - 按钮高度
+                const maxLeft = Math.max(0, screenWidth - btnWidth);
+                const maxTop = Math.max(0, screenHeight - btnHeight);
+
+                // 生成随机位置，且强制兜底在安全范围内
+                const randomLeft = Math.floor(Math.random() * (maxLeft + 1));
+                const randomTop = Math.floor(Math.random() * (maxTop + 1));
+
+                // 最终安全位置（双重兜底，确保绝对不出界）
+                return {
+                    left: Math.min(Math.max(0, randomLeft), maxLeft),
+                    top: Math.min(Math.max(0, randomTop), maxTop)
+                };
+            };
+
+            // 移动不原谅按钮（绝对不出界）
+            const moveNotForgiveBtn = () => {
+                if (isForgiven) return;
+                
+                // 获取安全位置
+                const safePos = getBtnSafePos();
+                
+                // 应用位置（使用fixed定位，基于可视区域）
+                notForgiveBtn.style.position = 'fixed';
+                notForgiveBtn.style.left = `${safePos.left}px`;
+                notForgiveBtn.style.top = `${safePos.top}px`;
+                
+                // 强制浏览器重绘，避免位置延迟
+                notForgiveBtn.offsetHeight;
+            };
+
+            // 不原谅按钮事件绑定（全场景触发）
+            notForgiveBtn.addEventListener('mouseover', moveNotForgiveBtn);
+            notForgiveBtn.addEventListener('mousedown', moveNotForgiveBtn); // 按下鼠标就触发，更难点击
+            notForgiveBtn.addEventListener('click', moveNotForgiveBtn);
+            notForgiveBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                moveNotForgiveBtn();
+            });
+
+            // ========== 花瓣生成逻辑（保持不变） ==========
+            const createSinglePetal = () => {
+                const petal = document.createElement('div');
+                petal.className = 'petal';
+                const size = Math.random() * 15 + 10;
+                petal.style.width = `${size}px`;
+                petal.style.height = `${size}px`;
+                petal.style.left = `${Math.random() * 100}vw`;
+                const duration = Math.random() * 5 + 3;
+                petal.style.animationDuration = `${duration}s`;
+                const r = Math.floor(Math.random() * 30) + 220;
+                const g = Math.floor(Math.random() * 30) + 170;
+                const b = Math.floor(Math.random() * 30) + 180;
+                petal.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+                document.body.appendChild(petal);
+                setTimeout(() => {
+                    petal.remove();
+                }, duration * 1000);
+            };
+
+            const startPetalRain = () => {
+                for (let i = 0; i < 20; i++) {
+                    createSinglePetal();
+                }
+                petalInterval = setInterval(() => {
+                    createSinglePetal();
+                }, 100);
+            };
+
+            // 原谅按钮逻辑
+            forgiveBtn.addEventListener('click', () => {
+                if (isForgiven) return;
+                isForgiven = true;
+                startPetalRain();
+                // 恢复初始位置
+                notForgiveBtn.style.position = 'absolute';
+                notForgiveBtn.style.left = 'calc(50% + 40px)';
+                notForgiveBtn.style.top = '0';
+                setTimeout(() => {
+                    alert('谢谢你的原谅！我以后再也不敢了～❤️');
+                }, 800);
+            });
+
+            // 禁止关闭页面
+            window.addEventListener('beforeunload', (e) => {
+                if (!isForgiven) {
+                    e.preventDefault();
+                    e.returnValue = '';
+                    return '你还没原谅我呢，别走啊！';
+                }
+            });
+
+            // 窗口缩放时重新计算按钮位置（适配窗口变化）
+            window.addEventListener('resize', () => {
+                if (!isForgiven) moveNotForgiveBtn();
+            });
+
+            // 清理定时器
+            window.addEventListener('unload', () => {
+                if (petalInterval) clearInterval(petalInterval);
+            });
+        });
+    </script>
+</body>
+</html>
